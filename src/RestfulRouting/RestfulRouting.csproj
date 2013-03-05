@@ -79,6 +79,9 @@
     <Compile Include="NamedRoute.cs" />
     <Compile Include="RestfulHttpMethodConstraint.cs" />
     <Compile Include="RouteDebug\RouteDebugController.cs" />
+    <Compile Include="RouteDebug\RouteDebugRouteParser.cs" />
+    <Compile Include="RouteDebug\RouteDebugViewModel.cs" />
+    <Compile Include="RouteDebug\DebugRouteInfo.cs" />
     <Compile Include="ViewEngines\RestfulRoutingRazorViewEngine.cs" />
     <Compile Include="ViewEngines\RestfulRoutingViewEngine.cs" />
     <Compile Include="ViewEngines\RestfulRoutingWebFormViewEngine.cs" />

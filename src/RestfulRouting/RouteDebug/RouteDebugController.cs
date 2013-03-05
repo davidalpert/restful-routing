@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,99 +9,16 @@ namespace RestfulRouting.RouteDebug
 {
     public class RouteDebugController : Controller
     {
-        public class RouteDebugViewModel
-        {
-            public string DebugPath { get; set; }
-            public IList<RouteInfo> RouteInfos { get; set; }
-        }
-
-        public class RouteInfo
-        {
-            public int Position { get; set; }
-            public string HttpMethod { get; set; }
-            public string Path { get; set; }
-            public string Endpoint { get; set; }
-            public string Area { get; set; }
-            public string Namespaces { get; set; }
-            public string Name { get; set; }
-            public bool IsUnknown { get; set; }
-        }
-
         public ActionResult Index()
         {
-            var model = new RouteDebugViewModel { RouteInfos = new List<RouteInfo>() };
-            int position = 1;
-            foreach (var routeBase in RouteTable.Routes)
-            {
-                var route = routeBase as Route;
-                if (route != null)
-                {
-                    // issue: #33 Fix
-                    var httpMethodConstraint =
-                        (route.Constraints ?? new RouteValueDictionary())["httpMethod"] as HttpMethodConstraint;
+            var model = RouteDebugRouteParser.Parse(RouteTable.Routes);
 
-                    ICollection<string> allowedMethods = new string[] { };
-                    if (httpMethodConstraint != null)
-                    {
-                        allowedMethods = httpMethodConstraint.AllowedMethods;
-                    }
+            var html = GenerateRouteDebugHtml(model);
 
-                    var namespaces = new string[] { };
-                    if (route.DataTokens != null && route.DataTokens["namespaces"] != null)
-                        namespaces = (route.DataTokens["namespaces"] ?? new string[0]) as string[];
-                    var defaults = new RouteValueDictionary();
-                    if (route.Defaults != null)
-                        defaults = route.Defaults;
-                    if (route.DataTokens == null)
-                        route.DataTokens = new RouteValueDictionary();
-
-                    var namedRoute = route as NamedRoute;
-                    var routeName = "";
-                    if (namedRoute != null)
-                    {
-                        routeName = namedRoute.Name;
-                    }
-
-                    model.RouteInfos.Add(new RouteInfo
-                    {
-                        Position = position,
-                        HttpMethod = string.Join(", ", allowedMethods.ToArray()),
-                        Path = route.Url,
-                        Endpoint = defaults["controller"] + "#" + defaults["action"],
-                        Area = route.DataTokens["area"] as string,
-                        Namespaces = string.Join(" ", (namespaces).ToArray()),
-                        Name = routeName
-                    });
-                }
-                else
-                {
-                    const string unknown = "???";
-                    var type = routeBase.GetType();
-                    model.RouteInfos.Add(new RouteInfo
-                    {
-                        Position = position,
-                        HttpMethod = "*",
-                        Path = type.FullName,
-                        Endpoint = unknown,
-                        Area = unknown,
-                        Namespaces = type.Namespace,
-                        Name = type.Name + " (external)",
-                        IsUnknown = true
-                    });
-                }
-
-                position++;
-            }
-
-            var debugPath = (from p in model.RouteInfos
-                             where p.Endpoint.Equals("routedebug#resources", StringComparison.InvariantCultureIgnoreCase)
-                             select p.Path.Replace("{name}", string.Empty)).FirstOrDefault();
-            model.DebugPath = debugPath;
-
-            return Content(Debugger(model));
+            return Content(html);
         }
 
-        public string Debugger(RouteDebugViewModel model)
+        public string GenerateRouteDebugHtml(RouteDebugViewModel model)
         {
             var routeInfos = new StringBuilder();
             foreach (var routeinfo in model.RouteInfos)
@@ -121,8 +37,7 @@ namespace RestfulRouting.RouteDebug
             return HtmlPage.Replace("{{routes}}", routeInfos.ToString());
         }
 
-
-        const string HtmlPage =
+        private const string HtmlPage =
             @"<!DOCTYPE html>
     <html lang=""en"">
       <head>
